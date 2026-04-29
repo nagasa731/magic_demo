@@ -7,42 +7,41 @@
  */
 
 // ============================================================
-// 設定（調整したい場合はここだけ変える）
+// 設定
 // ============================================================
-const THRESHOLD      = 18;   // 振りの強さのしきい値（大きいほど強く振る必要がある）
-const TILT_LIMIT     = 40;   // 傾き許容角（度）。画面が上向きのときだけ検知する
-const COOLDOWN_MS    = 1200; // 連続検知を防ぐ待機時間（ミリ秒）
-const AUTO_RESET_SEC = 5;    // 振り上げ後、自動で戻るまでの秒数
+const THRESHOLD      = 18;   // 振りの強さのしきい値
+const TILT_LIMIT     = 40;   // 傾き許容角（度）
+const COOLDOWN_MS    = 1200; // 連続検知防止（ミリ秒）
+const AUTO_RESET_SEC = 5;    // 振り上げ後、全画面を閉じるまでの秒数
 
 // ============================================================
 // 状態
 // ============================================================
-let variantIdx     = 0;     // 現在選ばれているバリアントの番号
-let isAfter        = false; // 振った後の状態かどうか
-let animating      = false; // 切替アニメーション中かどうか
-let autoResetTimer = null;  // 自動リセット用タイマーID
-let lastTrigger    = 0;     // 最後に検知した時刻
-
-// スワイプ追跡
-let touchStartX    = 0;
-let isDragging     = false;
+let variantIdx     = 0;
+let isAfter        = false;
+let animating      = false;
+let autoResetTimer = null;
+let lastTrigger    = 0;
+let isFullscreen   = false; // 全画面表示中かどうか
 
 // ============================================================
 // DOM参照
 // ============================================================
-const mainScreen  = document.getElementById('main-screen');
-const cardTrack   = document.getElementById('card-track');
-const dotArea     = document.getElementById('dot-indicator');
-const stateLabel  = document.getElementById('state-label');
-const hint        = document.getElementById('hint');
-
-// フラッシュ要素（なければ作る）
-const flash = document.createElement('div');
-flash.id = 'flash';
-document.body.appendChild(flash);
+const mainScreen       = document.getElementById('main-screen');
+const cardTrack        = document.getElementById('card-track');
+const dotArea          = document.getElementById('dot-indicator');
+const stateLabel       = document.getElementById('state-label');
+const hint             = document.getElementById('hint');
+const flash            = document.getElementById('flash');
+const overlay          = document.getElementById('fullscreen-overlay');
+const fullscreenCard   = document.getElementById('fullscreen-card');
+const fullscreenSvg    = document.getElementById('fullscreen-svg');
+const fullscreenLabel  = document.getElementById('fullscreen-label');
+const fullscreenHint   = document.getElementById('fullscreen-hint');
+const fullscreenClose  = document.getElementById('fullscreen-close');
 
 // ============================================================
-// カードとドットを variants.js の数に合わせて生成
+// カードとドットを生成
 // ============================================================
 const cards = [];
 const dots  = [];
@@ -52,20 +51,16 @@ VARIANTS.forEach((v, i) => {
   const card = document.createElement('div');
   card.className = 'card' + (i === 0 ? ' active' : '');
   card.dataset.idx = i;
+  card.style.background = v.bgBefore;
   card.innerHTML = `
     <div class="card-inner">
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${v.svgBefore}</svg>
     </div>
   `;
-  // カードの背景色
-  card.style.background = v.bgBefore;
-  // タップで選択
+  // タップ → 全画面へ
   card.addEventListener('click', () => {
-    if (isAfter) {
-      switchToBefore();
-    } else if (parseInt(card.dataset.idx) !== variantIdx) {
-      selectVariant(parseInt(card.dataset.idx));
-    }
+    selectVariant(i);
+    openFullscreen(i);
   });
   cardTrack.appendChild(card);
   cards.push(card);
@@ -78,74 +73,76 @@ VARIANTS.forEach((v, i) => {
 });
 
 // ============================================================
-// カルーセル位置計算
+// scroll-snap ベースのカルーセル
+// スクロール位置を監視して、中央に来ているカードをactiveにする
 // ============================================================
-function updateCarousel(idx) {
-  // レイアウト確定後にカード実サイズを取得
-  const cardW = cards[0].offsetWidth;
-  const gap   = 20;
-  if (cardW === 0) {
-    // まだレイアウトされていなければ次フレームで再試行
-    requestAnimationFrame(() => updateCarousel(idx));
-    return;
-  }
-  // 選択カードが画面中央に来るようにtrackをずらす
-  const center = window.innerWidth / 2;
-  const offset = center - cardW / 2 - idx * (cardW + gap);
-  cardTrack.style.transform = `translateX(${offset}px)`;
+function getActiveIndexFromScroll() {
+  // 各カードの中心がtrackの中心に最も近いものを選ぶ
+  const trackCenter = cardTrack.scrollLeft + cardTrack.clientWidth / 2;
+  let closest = 0;
+  let minDist  = Infinity;
+  cards.forEach((card, i) => {
+    const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+    const dist = Math.abs(cardCenter - trackCenter);
+    if (dist < minDist) { minDist = dist; closest = i; }
+  });
+  return closest;
+}
 
-  // active切替
+cardTrack.addEventListener('scroll', () => {
+  const idx = getActiveIndexFromScroll();
+  if (idx !== variantIdx) {
+    variantIdx = idx;
+    cards.forEach((c, i) => c.classList.toggle('active', i === idx));
+    dots.forEach((d, i)  => d.classList.toggle('active', i === idx));
+  }
+}, { passive: true });
+
+function selectVariant(idx) {
+  variantIdx = idx;
+  // 選択カードが中央に来るようにスクロール
+  const card   = cards[idx];
+  const target = card.offsetLeft - (cardTrack.clientWidth - card.offsetWidth) / 2;
+  cardTrack.scrollTo({ left: target, behavior: 'smooth' });
   cards.forEach((c, i) => c.classList.toggle('active', i === idx));
   dots.forEach((d, i)  => d.classList.toggle('active', i === idx));
 }
 
-// 初期位置：DOMが完全に描画されてから実行
-requestAnimationFrame(() => requestAnimationFrame(() => updateCarousel(0)));
-window.addEventListener('resize', () => updateCarousel(variantIdx));
-
 // ============================================================
-// バリアント選択
+// 全画面オーバーレイ
 // ============================================================
-function selectVariant(idx) {
-  variantIdx = idx;
-  updateCarousel(idx);
+function openFullscreen(idx) {
+  const v = VARIANTS[idx];
+  fullscreenSvg.innerHTML      = v.svgBefore;
+  fullscreenCard.style.background = v.bgBefore;
+  fullscreenLabel.textContent  = v.labelBefore;
+  fullscreenHint.textContent   = '⬆️ うえに ふりあげよう！';
+  fullscreenCard.classList.remove('is-after');
+  overlay.classList.add('visible');
+  isFullscreen = true;
+  isAfter      = false;
 }
 
-// ============================================================
-// スワイプ操作
-// ============================================================
-cardTrack.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  isDragging  = true;
-}, { passive: true });
-
-cardTrack.addEventListener('touchend', e => {
-  if (!isDragging) return;
-  isDragging = false;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) < 30) return; // 短いスワイプは無視
-  const next = dx < 0
-    ? Math.min(variantIdx + 1, VARIANTS.length - 1)
-    : Math.max(variantIdx - 1, 0);
-  if (!isAfter) selectVariant(next);
-}, { passive: true });
-
-// ============================================================
-// 描画（指定カードのSVGと背景を切り替える）
-// ============================================================
-function render(idx, after) {
-  const v    = VARIANTS[idx];
-  const card = cards[idx];
-  card.querySelector('svg').innerHTML = after ? v.svgAfter  : v.svgBefore;
-  card.style.background               = after ? v.bgAfter   : v.bgBefore;
-  stateLabel.textContent              = after ? v.labelAfter : v.labelBefore;
+function closeFullscreen() {
+  clearAutoReset();
+  overlay.classList.remove('visible');
+  isFullscreen = false;
+  isAfter      = false;
+  // カード側も変化前に戻す
+  const v    = VARIANTS[variantIdx];
+  const card = cards[variantIdx];
+  card.querySelector('svg').innerHTML = v.svgBefore;
+  card.style.background               = v.bgBefore;
+  card.classList.remove('is-after');
 }
 
+fullscreenClose.addEventListener('click', closeFullscreen);
+
 // ============================================================
-// 振り上げ後に切替
+// 振り上げ後の切替
 // ============================================================
 function switchToAfter() {
-  if (isAfter || animating) return;
+  if (isAfter || animating || !isFullscreen) return;
   animating = true;
 
   // フラッシュ
@@ -155,47 +152,45 @@ function switchToAfter() {
   // パーティクル
   spawnParticles();
 
-  const card = cards[variantIdx];
-
-  // popアニメーション
-  card.classList.add('pop');
-  card.addEventListener('animationend', () => card.classList.remove('pop'), { once: true });
-
   setTimeout(() => {
-    render(variantIdx, true);
+    const v = VARIANTS[variantIdx];
+
+    // 全画面カードを変化後に
+    fullscreenSvg.innerHTML         = v.svgAfter;
+    fullscreenCard.style.background = v.bgAfter;
+    fullscreenLabel.textContent     = v.labelAfter;
+    fullscreenCard.classList.add('is-after');
+    fullscreenHint.textContent      = '✨ もうすぐ もとにもどるよ';
+
+    // カルーセル側のカードも変化後に（全画面の後ろで）
+    const card = cards[variantIdx];
+    card.querySelector('svg').innerHTML = v.svgAfter;
+    card.style.background               = v.bgAfter;
     card.classList.add('is-after');
+
     isAfter   = true;
     animating = false;
     startAutoReset();
-    hint.textContent = `✨ タップしたら もどるよ`;
   }, 120);
 }
 
-function switchToBefore() {
-  if (!isAfter || animating) return;
-  clearAutoReset();
-  animating = true;
-  const card = cards[variantIdx];
-  card.style.opacity = '0';
-  card.style.transition = 'opacity 0.15s';
-  setTimeout(() => {
-    render(variantIdx, false);
-    card.classList.remove('is-after');
-    card.style.opacity = '1';
-    isAfter   = false;
-    animating = false;
-    hint.textContent = '⬆️ うえに ふりあげよう！';
-    stateLabel.textContent = 'ふだをえらんでね';
-  }, 160);
-}
-
 // ============================================================
-// 自動リセットタイマー
+// 自動リセット（振り上げから AUTO_RESET_SEC 秒後に全画面を閉じる）
 // ============================================================
 function startAutoReset() {
   clearAutoReset();
+  let remaining = AUTO_RESET_SEC;
+  const tick = setInterval(() => {
+    remaining--;
+    if (remaining > 0) {
+      fullscreenHint.textContent = `✨ あと ${remaining}びょうで もどるよ`;
+    } else {
+      clearInterval(tick);
+    }
+  }, 1000);
   autoResetTimer = setTimeout(() => {
-    switchToBefore();
+    clearInterval(tick);
+    closeFullscreen();
   }, AUTO_RESET_SEC * 1000);
 }
 
@@ -207,19 +202,19 @@ function clearAutoReset() {
 }
 
 // ============================================================
-// パーティクルエフェクト
+// パーティクル
 // ============================================================
 const PARTICLES = ['✨', '⭐', '💫', '🌟', '✦', '🎇'];
 
 function spawnParticles() {
   const cx = window.innerWidth  / 2;
   const cy = window.innerHeight / 2;
-  for (let i = 0; i < 12; i++) {
-    const el = document.createElement('div');
+  for (let i = 0; i < 14; i++) {
+    const el    = document.createElement('div');
     el.className = 'particle';
     el.textContent = PARTICLES[Math.floor(Math.random() * PARTICLES.length)];
-    const angle = (Math.PI * 2 / 12) * i + (Math.random() - 0.5) * 0.5;
-    const dist  = 80 + Math.random() * 100;
+    const angle = (Math.PI * 2 / 14) * i + (Math.random() - 0.5) * 0.4;
+    const dist  = 80 + Math.random() * 120;
     el.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
     el.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
     el.style.setProperty('--dr', `${(Math.random() - 0.5) * 360}deg`);
@@ -232,19 +227,22 @@ function spawnParticles() {
 }
 
 // ============================================================
-// タップで手動リセット
+// PCテスト用
 // ============================================================
-cards.forEach(card => {
-  card.addEventListener('click', () => {
-    if (isAfter && parseInt(card.dataset.idx) === variantIdx) switchToBefore();
-  });
-});
-
-// PCテスト用：スペースキーで切替
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space') isAfter ? switchToBefore() : switchToAfter();
-  if (e.code === 'ArrowRight') selectVariant(Math.min(variantIdx + 1, VARIANTS.length - 1));
-  if (e.code === 'ArrowLeft')  selectVariant(Math.max(variantIdx - 1, 0));
+  if (e.code === 'Space') {
+    if (!isFullscreen) {
+      openFullscreen(variantIdx);
+    } else if (!isAfter) {
+      switchToAfter();
+    } else {
+      closeFullscreen();
+    }
+  }
+  if (e.code === 'ArrowRight' && !isFullscreen)
+    selectVariant(Math.min(variantIdx + 1, VARIANTS.length - 1));
+  if (e.code === 'ArrowLeft' && !isFullscreen)
+    selectVariant(Math.max(variantIdx - 1, 0));
 });
 
 // ============================================================
@@ -252,20 +250,17 @@ document.addEventListener('keydown', e => {
 // ============================================================
 function onMotion(e) {
   const a = e.accelerationIncludingGravity;
-  if (!a) return;
+  if (!a || !isFullscreen || isAfter) return;
 
   const ax = a.x || 0;
   const ay = a.y || 0;
   const az = a.z || 0;
 
-  // 傾き計算（画面が上を向いているか）
   const tilt = Math.atan2(Math.sqrt(ax * ax + ay * ay), Math.abs(az)) * 180 / Math.PI;
-
-  if (isAfter) return;
 
   const now = Date.now();
   if (now - lastTrigger < COOLDOWN_MS) return;
-  if (tilt > TILT_LIMIT) return; // 傾きすぎは無視
+  if (tilt > TILT_LIMIT) return;
 
   if (az > THRESHOLD) {
     lastTrigger = now;
@@ -277,7 +272,6 @@ function onMotion(e) {
 // 開始ボタン
 // ============================================================
 document.getElementById('start-btn').addEventListener('click', async () => {
-  // iOS13+ はセンサー使用の許可ダイアログが必要
   if (typeof DeviceMotionEvent !== 'undefined' &&
       typeof DeviceMotionEvent.requestPermission === 'function') {
     try {
@@ -295,8 +289,4 @@ document.getElementById('start-btn').addEventListener('click', async () => {
   document.getElementById('start-screen').style.display = 'none';
   mainScreen.style.display = 'flex';
   window.addEventListener('devicemotion', onMotion);
-
-  // display:flex になった直後はまだレイアウトが確定していないので
-  // 2フレーム待ってから位置を計算する
-  requestAnimationFrame(() => requestAnimationFrame(() => updateCarousel(0)));
 });
