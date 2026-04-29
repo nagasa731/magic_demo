@@ -207,9 +207,12 @@ const VARIANTS = [
 // ============================================================
 // 状態
 // ============================================================
-let variantIdx = 0;
-let isAfter    = false;
-let animating  = false;
+let variantIdx     = 0;
+let isAfter        = false;
+let animating      = false;
+let autoResetTimer = null;
+
+const AUTO_RESET_SEC = 5; // 振り上げ後に自動で戻るまでの秒数
 
 const picture    = document.getElementById('picture');
 const picSvg     = document.getElementById('pic-svg');
@@ -241,12 +244,15 @@ function switchToAfter() {
     picture.style.opacity = '1';
     isAfter   = true;
     animating = false;
-    hint.textContent = 'タップで元に戻す';
+    // 自動リセットタイマーをセット
+    startAutoReset();
+    hint.textContent = `タップで元に戻す（${AUTO_RESET_SEC}秒で自動リセット）`;
   }, 160);
 }
 
 function switchToBefore() {
   if (!isAfter || animating) return;
+  clearAutoReset();
   animating = true;
   picture.style.opacity = '0';
   setTimeout(() => {
@@ -258,13 +264,43 @@ function switchToBefore() {
   }, 160);
 }
 
+function startAutoReset() {
+  clearAutoReset();
+  let remaining = AUTO_RESET_SEC;
+  // カウントダウン表示
+  const tick = setInterval(() => {
+    remaining--;
+    if (remaining > 0) {
+      hint.textContent = `タップで元に戻す（${remaining}秒で自動リセット）`;
+    } else {
+      clearInterval(tick);
+    }
+  }, 1000);
+  autoResetTimer = setTimeout(() => {
+    clearInterval(tick);
+    switchToBefore();
+  }, AUTO_RESET_SEC * 1000);
+}
+
+function clearAutoReset() {
+  if (autoResetTimer) {
+    clearTimeout(autoResetTimer);
+    autoResetTimer = null;
+  }
+}
+
 picture.addEventListener('click', () => { if (isAfter) switchToBefore(); });
 document.getElementById('reset-btn').addEventListener('click', switchToBefore);
 
 document.querySelectorAll('[data-v]').forEach(btn => {
   btn.addEventListener('click', () => {
     variantIdx = parseInt(btn.dataset.v);
-    render(variantIdx, isAfter);
+    // 振った後の状態でバリアント切替したら振る前にリセット
+    if (isAfter) {
+      switchToBefore();
+    } else {
+      render(variantIdx, false);
+    }
   });
 });
 
