@@ -1,114 +1,283 @@
-/* style.css — スタイル定義 */
+/* style.css — 本実装UI（子ども向けポップ） */
 
-* {
-  box-sizing: border-box;
+/* ========== リセット・ベース ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --yellow:  #FFE033;
+  --orange:  #FF7A1A;
+  --pink:    #FF4FA0;
+  --sky:     #3ECFFF;
+  --green:   #3EE07A;
+  --purple:  #A855F7;
+  --white:   #FFFFFF;
+  --ink:     #1A1040;
+  --card-w:  min(72vw, 260px);
+  --card-h:  calc(var(--card-w) * 1.35);
+  --radius:  24px;
 }
 
-body {
-  margin: 0;
-  background: #111;
-  color: #eee;
-  font-family: sans-serif;
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(160deg, #FFF6C2 0%, #FFD6F5 50%, #C2EEFF 100%);
+  font-family: 'Nunito', 'Fredoka One', sans-serif;
+  color: var(--ink);
+  user-select: none;
+  touch-action: pan-y; /* カードスワイプのためy方向は許可 */
+}
+
+/* ========== 背景デコ ========== */
+.bg-deco { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.18;
+  animation: float 8s ease-in-out infinite;
+}
+.b1 { width: 180px; height: 180px; background: var(--pink);   top: -60px;  left: -40px;  animation-delay: 0s; }
+.b2 { width: 120px; height: 120px; background: var(--sky);    top: 30%;    right: -30px; animation-delay: 2s; }
+.b3 { width: 200px; height: 200px; background: var(--yellow); bottom: -80px; left: 20%;  animation-delay: 1s; }
+.b4 { width:  90px; height:  90px; background: var(--green);  bottom: 15%; right: 10%;  animation-delay: 3s; }
+.b5 { width: 140px; height: 140px; background: var(--purple); top: 55%;    left: -30px;  animation-delay: 1.5s; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-18px); }
+}
+
+.star {
+  position: absolute;
+  font-size: 22px;
+  color: var(--orange);
+  opacity: 0.55;
+  animation: twinkle 3s ease-in-out infinite;
+}
+.s1 { top: 12%;  left: 8%;   animation-delay: 0s;   font-size: 18px; }
+.s2 { top: 22%;  right: 10%; animation-delay: 0.8s; }
+.s3 { bottom: 28%; left: 12%; animation-delay: 1.6s; font-size: 28px; color: var(--pink); }
+.s4 { bottom: 18%; right: 8%; animation-delay: 0.4s; color: var(--purple); font-size: 20px; }
+
+@keyframes twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg);   opacity: 0.55; }
+  50%       { transform: scale(1.4) rotate(20deg); opacity: 0.9; }
+}
+
+/* ========== スタート画面 ========== */
+#start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100svh;
-  overflow: hidden;
-  user-select: none;
-}
-
-/* ---------- スタート画面 / メイン画面 共通 ---------- */
-#start-screen,
-#main-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 20px;
-  width: 100%;
-  padding: 24px;
+  padding: 32px;
 }
 
+.start-emoji {
+  font-size: 72px;
+  animation: wand-wave 2s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+@keyframes wand-wave {
+  0%, 100% { transform: rotate(-10deg); }
+  50%       { transform: rotate(14deg); }
+}
+
+.start-title {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: clamp(40px, 12vw, 64px);
+  line-height: 1.1;
+  text-align: center;
+  color: var(--ink);
+  /* 縁取り */
+  -webkit-text-stroke: 2px var(--white);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 4px 0 rgba(0,0,0,0.12));
+}
+
+.start-desc {
+  font-size: clamp(15px, 4vw, 18px);
+  text-align: center;
+  line-height: 1.7;
+  color: #5A3FA0;
+}
+.start-desc strong { color: var(--orange); }
+
+#start-btn {
+  margin-top: 8px;
+  padding: 18px 52px;
+  font-family: 'Fredoka One', sans-serif;
+  font-size: 26px;
+  color: var(--ink);
+  background: var(--yellow);
+  border: none;
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 #C8A800, 0 10px 24px rgba(0,0,0,0.12);
+  transition: transform 0.1s, box-shadow 0.1s;
+  position: relative;
+  z-index: 1;
+}
+#start-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #C8A800, 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ========== メイン画面 ========== */
 #main-screen {
   display: none; /* script.js で開始後に flex に切り替わる */
-}
-
-/* ---------- ボタン ---------- */
-button {
-  padding: 14px 32px;
-  font-size: 18px;
-  background: #333;
-  color: #eee;
-  border: 1px solid #555;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-/* ---------- 絵エリア ---------- */
-#picture {
-  width: min(80vw, 320px);
-  aspect-ratio: 1;
-  display: flex;
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid #444;
-  border-radius: 8px;
-  background: #1a1a1a;
-  transition: background 0.3s, opacity 0.15s;
+  gap: 20px;
+  padding: 24px 0 32px;
 }
 
-#picture svg {
-  width: 80%;
-  height: 80%;
-}
-
-/* ---------- 状態ラベル ---------- */
-#state-label {
-  font-size: 16px;
-  color: #aaa;
-}
-
-/* ---------- センサー数値 ---------- */
-#info {
-  font-size: 13px;
-  color: #888;
+/* 状態ラベル */
+.state-label {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  color: var(--purple);
+  letter-spacing: 0.04em;
   text-align: center;
-  line-height: 1.8;
+  min-height: 1.4em;
+  transition: opacity 0.2s;
 }
 
-/* ---------- 振りゲージ ---------- */
-#gauge-wrap {
-  width: 200px;
-  height: 6px;
-  background: #333;
-  border-radius: 3px;
+/* ========== カードカルーセル ========== */
+.card-carousel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  touch-action: pan-x; /* 横スワイプ */
   overflow: hidden;
 }
 
-#gauge {
-  height: 100%;
-  width: 0%;
-  background: #69f;
-  border-radius: 3px;
-  transition: width 0.08s;
-}
-
-/* ---------- ヒント ---------- */
-#hint {
-  font-size: 13px;
-  color: #666;
-}
-
-/* ---------- デバッグボタン群 ---------- */
-#debug-buttons {
+.card-track {
   display: flex;
-  gap: 8px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-  justify-content: center;
+  gap: 20px;
+  /* script.js が translateX で制御 */
+  transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
+  will-change: transform;
+  padding: 12px 0;
 }
 
-#debug-buttons button {
-  font-size: 12px;
-  padding: 6px 12px;
+/* ========== カード本体 ========== */
+.card {
+  flex-shrink: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
+              box-shadow 0.35s,
+              filter 0.35s;
+  /* 非選択カードは縮小・暗く */
+  transform: scale(0.82);
+  filter: brightness(0.7);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+.card.active {
+  transform: scale(1);
+  filter: brightness(1);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.18);
+}
+
+/* カード内SVGエリア */
+.card-inner {
+  width: 78%;
+  height: 78%;
+}
+.card-inner svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* 振り上げ後のカードはキラキラ枠 */
+.card.is-after {
+  animation: card-glow 1s ease-in-out infinite alternate;
+}
+@keyframes card-glow {
+  from { box-shadow: 0 0 16px 4px rgba(255,200,0,0.5),  0 10px 32px rgba(0,0,0,0.18); }
+  to   { box-shadow: 0 0 32px 10px rgba(255,100,200,0.5), 0 10px 32px rgba(0,0,0,0.18); }
+}
+
+/* 振り上げ成功エフェクト */
+@keyframes card-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.12) rotate(-2deg); }
+  60%  { transform: scale(0.96) rotate(1deg); }
+  100% { transform: scale(1); }
+}
+.card.pop {
+  animation: card-pop 0.4s cubic-bezier(0.34, 1.5, 0.64, 1) forwards;
+}
+
+/* ========== ドットインジケーター ========== */
+.dot-indicator {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #C0A8E0;
+  transition: background 0.3s, transform 0.3s;
+}
+.dot.active {
+  background: var(--purple);
+  transform: scale(1.4);
+}
+
+/* ========== ヒント ========== */
+.hint {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: clamp(16px, 4.5vw, 20px);
+  color: #7A55C0;
+  text-align: center;
+  padding: 0 24px;
+  min-height: 1.5em;
+  transition: opacity 0.3s;
+}
+
+/* ========== フラッシュエフェクト ========== */
+#flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 100;
+  transition: opacity 0.06s;
+}
+#flash.active { opacity: 0.6; }
+
+/* ========== ✨パーティクル ========== */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 99;
+  font-size: 22px;
+  animation: particle-fly 0.9s ease-out forwards;
+}
+@keyframes particle-fly {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(var(--dr)); opacity: 0; }
 }
