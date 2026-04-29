@@ -10,7 +10,7 @@
 </head>
 <body>
 
-  <!-- 背景の星・泡デコ -->
+  <!-- 背景デコ -->
   <div class="bg-deco" aria-hidden="true">
     <div class="bubble b1"></div>
     <div class="bubble b2"></div>
@@ -23,38 +23,43 @@
     <div class="star s4">★</div>
   </div>
 
-  <!-- ========== スタート画面 ========== -->
+  <!-- スタート画面 -->
   <div id="start-screen">
     <div class="start-emoji">🪄</div>
     <h1 class="start-title">まほうの<br>ふだ</h1>
     <p class="start-desc">すきなふだをえらんで<br>スマホを<strong>うえに ふりあげよう！</strong></p>
-    <button id="start-btn">
-      <span>はじめる</span>
-    </button>
+    <button id="start-btn"><span>はじめる</span></button>
   </div>
 
-  <!-- ========== メイン画面 ========== -->
+  <!-- メイン画面（カード選択） -->
   <div id="main-screen">
-
-    <!-- 上部ラベル -->
     <div id="state-label" class="state-label">ふだをえらんでね</div>
 
-    <!-- カードスワイプエリア -->
-    <div id="card-carousel" class="card-carousel">
+    <!-- カードカルーセル（scroll-snapで中央揃え） -->
+    <div class="card-carousel">
       <div id="card-track" class="card-track">
-        <!-- カードは script.js が variants.js を読んで自動生成 -->
+        <!-- script.js が variants.js を読んで自動生成 -->
       </div>
-      <!-- ドットインジケーター -->
       <div id="dot-indicator" class="dot-indicator"></div>
     </div>
 
-    <!-- ヒントテキスト -->
-    <div id="hint" class="hint">⬆️ うえに ふりあげよう！</div>
-
+    <div id="hint" class="hint">タップして ふだをえらぼう！</div>
   </div>
+
+  <!-- 全画面オーバーレイ（カード選択後） -->
+  <div id="fullscreen-overlay">
+    <button id="fullscreen-close">✕</button>
+    <div id="fullscreen-label" class="state-label">ふだをえらんでね</div>
+    <div id="fullscreen-card">
+      <svg id="fullscreen-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div id="fullscreen-hint" class="hint">⬆️ うえに ふりあげよう！</div>
+  </div>
+
+  <!-- フラッシュ -->
+  <div id="flash"></div>
 
   <script src="variants.js"></script>
   <script src="script.js"></script>
-
 </body>
 </html>
