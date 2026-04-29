@@ -3,46 +3,56 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>振り上げデモ</title>
+  <title>まほうのふだ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- スタート画面 -->
-  <div id="start-screen">
-    <p style="text-align:center;color:#999;font-size:14px">
-      センサー許可のため<br>ボタンを押してください
-    </p>
-    <button id="start-btn">開始</button>
+  <!-- 背景の星・泡デコ -->
+  <div class="bg-deco" aria-hidden="true">
+    <div class="bubble b1"></div>
+    <div class="bubble b2"></div>
+    <div class="bubble b3"></div>
+    <div class="bubble b4"></div>
+    <div class="bubble b5"></div>
+    <div class="star s1">✦</div>
+    <div class="star s2">✦</div>
+    <div class="star s3">✦</div>
+    <div class="star s4">★</div>
   </div>
 
-  <!-- メイン画面 -->
+  <!-- ========== スタート画面 ========== -->
+  <div id="start-screen">
+    <div class="start-emoji">🪄</div>
+    <h1 class="start-title">まほうの<br>ふだ</h1>
+    <p class="start-desc">すきなふだをえらんで<br>スマホを<strong>うえに ふりあげよう！</strong></p>
+    <button id="start-btn">
+      <span>はじめる</span>
+    </button>
+  </div>
+
+  <!-- ========== メイン画面 ========== -->
   <div id="main-screen">
 
-    <div id="state-label">変化前</div>
+    <!-- 上部ラベル -->
+    <div id="state-label" class="state-label">ふだをえらんでね</div>
 
-    <!-- 絵エリア -->
-    <div id="picture">
-      <svg id="pic-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"></svg>
+    <!-- カードスワイプエリア -->
+    <div id="card-carousel" class="card-carousel">
+      <div id="card-track" class="card-track">
+        <!-- カードは script.js が variants.js を読んで自動生成 -->
+      </div>
+      <!-- ドットインジケーター -->
+      <div id="dot-indicator" class="dot-indicator"></div>
     </div>
 
-    <!-- 振りゲージ -->
-    <div id="gauge-wrap"><div id="gauge"></div></div>
-
-    <!-- センサー数値（デバッグ用） -->
-    <div id="info">
-      Z加速度: <span id="z-disp">0.00</span><br>
-      傾き: <span id="tilt-disp">0.0</span>°
-    </div>
-
-    <div id="hint">上に強く振り上げてください</div>
-
-    <!-- バリアント切替ボタン（script.js が variants.js を読んで自動生成） -->
-    <div id="debug-buttons"></div>
+    <!-- ヒントテキスト -->
+    <div id="hint" class="hint">⬆️ うえに ふりあげよう！</div>
 
   </div>
 
-  <!-- 絵の定義（variants.js）を先に読み込んでから script.js を読む -->
   <script src="variants.js"></script>
   <script src="script.js"></script>
 
