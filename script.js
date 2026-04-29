@@ -81,11 +81,17 @@ VARIANTS.forEach((v, i) => {
 // カルーセル位置計算
 // ============================================================
 function updateCarousel(idx) {
-  // カード幅 + gap(20px) 分だけずらす
-  const cardW  = cards[0].getBoundingClientRect().width || parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w'));
-  const gap    = 20;
+  // レイアウト確定後にカード実サイズを取得
+  const cardW = cards[0].offsetWidth;
+  const gap   = 20;
+  if (cardW === 0) {
+    // まだレイアウトされていなければ次フレームで再試行
+    requestAnimationFrame(() => updateCarousel(idx));
+    return;
+  }
+  // 選択カードが画面中央に来るようにtrackをずらす
   const center = window.innerWidth / 2;
-  const offset = center - (cardW / 2) - idx * (cardW + gap);
+  const offset = center - cardW / 2 - idx * (cardW + gap);
   cardTrack.style.transform = `translateX(${offset}px)`;
 
   // active切替
@@ -93,8 +99,8 @@ function updateCarousel(idx) {
   dots.forEach((d, i)  => d.classList.toggle('active', i === idx));
 }
 
-// 初期位置
-requestAnimationFrame(() => updateCarousel(0));
+// 初期位置：DOMが完全に描画されてから実行
+requestAnimationFrame(() => requestAnimationFrame(() => updateCarousel(0)));
 window.addEventListener('resize', () => updateCarousel(variantIdx));
 
 // ============================================================
@@ -290,6 +296,7 @@ document.getElementById('start-btn').addEventListener('click', async () => {
   mainScreen.style.display = 'flex';
   window.addEventListener('devicemotion', onMotion);
 
-  // 表示後にカルーセル位置を再計算
-  requestAnimationFrame(() => updateCarousel(0));
+  // display:flex になった直後はまだレイアウトが確定していないので
+  // 2フレーム待ってから位置を計算する
+  requestAnimationFrame(() => requestAnimationFrame(() => updateCarousel(0)));
 });
