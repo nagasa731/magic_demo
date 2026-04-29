@@ -24,7 +24,6 @@ html, body {
   font-family: 'Nunito', 'Fredoka One', sans-serif;
   color: var(--ink);
   user-select: none;
-  touch-action: pan-y; /* カードスワイプのためy方向は許可 */
 }
 
 /* ========== 背景デコ ========== */
@@ -60,7 +59,7 @@ html, body {
 .s4 { bottom: 18%; right: 8%; animation-delay: 0.4s; color: var(--purple); font-size: 20px; }
 
 @keyframes twinkle {
-  0%, 100% { transform: scale(1) rotate(0deg);   opacity: 0.55; }
+  0%, 100% { transform: scale(1) rotate(0deg);    opacity: 0.55; }
   50%       { transform: scale(1.4) rotate(20deg); opacity: 0.9; }
 }
 
@@ -93,7 +92,6 @@ html, body {
   line-height: 1.1;
   text-align: center;
   color: var(--ink);
-  /* 縁取り */
   -webkit-text-stroke: 2px var(--white);
   paint-order: stroke fill;
   filter: drop-shadow(0 4px 0 rgba(0,0,0,0.12));
@@ -119,8 +117,6 @@ html, body {
   cursor: pointer;
   box-shadow: 0 6px 0 #C8A800, 0 10px 24px rgba(0,0,0,0.12);
   transition: transform 0.1s, box-shadow 0.1s;
-  position: relative;
-  z-index: 1;
 }
 #start-btn:active {
   transform: translateY(4px);
@@ -129,7 +125,7 @@ html, body {
 
 /* ========== メイン画面 ========== */
 #main-screen {
-  display: none; /* script.js で開始後に flex に切り替わる */
+  display: none;
   position: fixed;
   inset: 0;
   z-index: 5;
@@ -148,7 +144,6 @@ html, body {
   letter-spacing: 0.04em;
   text-align: center;
   min-height: 1.4em;
-  transition: opacity 0.2s;
 }
 
 /* ========== カードカルーセル ========== */
@@ -158,18 +153,26 @@ html, body {
   align-items: center;
   gap: 16px;
   width: 100%;
-  touch-action: pan-x; /* 横スワイプ */
-  overflow: hidden;
 }
 
+/*
+  scroll-snap でカード中央揃えを実現。
+  JS でのオフセット計算に頼らないので確実にセンターに来る。
+*/
 .card-track {
   display: flex;
   gap: 20px;
-  /* script.js が translateX で制御 */
-  transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1);
-  will-change: transform;
+  width: 100%;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;       /* Firefox */
   padding: 12px 0;
+  /* 先頭・末尾カードも中央に来るようにpaddingで余白を作る */
+  padding-left:  calc(50% - var(--card-w) / 2);
+  padding-right: calc(50% - var(--card-w) / 2);
 }
+.card-track::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
 /* ========== カード本体 ========== */
 .card {
@@ -181,11 +184,10 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
-  transition: transform 0.35s cubic-bezier(0.34, 1.3, 0.64, 1),
-              box-shadow 0.35s,
-              filter 0.35s;
-  /* 非選択カードは縮小・暗く */
+  scroll-snap-align: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1),
+              box-shadow 0.3s,
+              filter 0.3s;
   transform: scale(0.82);
   filter: brightness(0.7);
   box-shadow: 0 4px 16px rgba(0,0,0,0.10);
@@ -197,7 +199,6 @@ html, body {
   box-shadow: 0 10px 32px rgba(0,0,0,0.18);
 }
 
-/* カード内SVGエリア */
 .card-inner {
   width: 78%;
   height: 78%;
@@ -207,7 +208,7 @@ html, body {
   height: 100%;
 }
 
-/* 振り上げ後のカードはキラキラ枠 */
+/* 振り上げ後カード */
 .card.is-after {
   animation: card-glow 1s ease-in-out infinite alternate;
 }
@@ -216,7 +217,6 @@ html, body {
   to   { box-shadow: 0 0 32px 10px rgba(255,100,200,0.5), 0 10px 32px rgba(0,0,0,0.18); }
 }
 
-/* 振り上げ成功エフェクト */
 @keyframes card-pop {
   0%   { transform: scale(1); }
   30%  { transform: scale(1.12) rotate(-2deg); }
@@ -254,10 +254,79 @@ html, body {
   text-align: center;
   padding: 0 24px;
   min-height: 1.5em;
-  transition: opacity 0.3s;
 }
 
-/* ========== フラッシュエフェクト ========== */
+/* ========== 全画面オーバーレイ ========== */
+#fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: none;               /* script.js で flex に切り替え */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 32px;
+  background: linear-gradient(160deg, #FFF6C2 0%, #FFD6F5 50%, #C2EEFF 100%);
+}
+
+#fullscreen-overlay.visible {
+  display: flex;
+}
+
+/* 全画面カード */
+#fullscreen-card {
+  width: min(80vw, 340px);
+  height: calc(min(80vw, 340px) * 1.35);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
+  transition: background 0.3s;
+}
+
+#fullscreen-card svg {
+  width: 78%;
+  height: 78%;
+}
+
+#fullscreen-card.is-after {
+  animation: card-glow 1s ease-in-out infinite alternate;
+}
+
+#fullscreen-label {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: clamp(18px, 5vw, 24px);
+  color: var(--purple);
+}
+
+#fullscreen-hint {
+  font-family: 'Fredoka One', sans-serif;
+  font-size: clamp(15px, 4vw, 19px);
+  color: #7A55C0;
+  text-align: center;
+}
+
+/* 閉じるボタン */
+#fullscreen-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0,0,0,0.12);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+
+/* ========== フラッシュ ========== */
 #flash {
   position: fixed;
   inset: 0;
@@ -269,7 +338,7 @@ html, body {
 }
 #flash.active { opacity: 0.6; }
 
-/* ========== ✨パーティクル ========== */
+/* ========== パーティクル ========== */
 .particle {
   position: fixed;
   pointer-events: none;
