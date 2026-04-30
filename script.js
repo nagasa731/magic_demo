@@ -109,25 +109,52 @@ function selectVariant(idx) {
 }
 
 // ============================================================
-// 全画面オーバーレイ
+// 全画面オーバーレイ（カードの位置から円形に広がる）
 // ============================================================
 function openFullscreen(idx) {
-  const v = VARIANTS[idx];
-  fullscreenSvg.innerHTML      = v.svgBefore;
+  const v    = VARIANTS[idx];
+  const card = cards[idx];
+
+  // カードの中心座標を画面全体に対するパーセントで取得
+  const rect = card.getBoundingClientRect();
+  const cx   = ((rect.left + rect.width  / 2) / window.innerWidth  * 100).toFixed(1) + '%';
+  const cy   = ((rect.top  + rect.height / 2) / window.innerHeight * 100).toFixed(1) + '%';
+  overlay.style.setProperty('--cx', cx);
+  overlay.style.setProperty('--cy', cy);
+
+  // 中身をセット
+  fullscreenSvg.innerHTML         = v.svgBefore;
   fullscreenCard.style.background = v.bgBefore;
-  fullscreenLabel.textContent  = v.labelBefore;
-  fullscreenHint.textContent   = '⬆️ うえに ふりあげよう！';
+  fullscreenLabel.textContent     = v.labelBefore;
+  fullscreenHint.textContent      = '⬆️ うえに ふりあげよう！';
   fullscreenCard.classList.remove('is-after');
-  overlay.classList.add('visible');
+
+  // アニメーション開始
+  overlay.classList.remove('open', 'closing');
+  overlay.classList.add('opening');
+  overlay.addEventListener('animationend', () => {
+    overlay.classList.remove('opening');
+    overlay.classList.add('open');
+  }, { once: true });
+
   isFullscreen = true;
   isAfter      = false;
 }
 
 function closeFullscreen() {
   clearAutoReset();
-  overlay.classList.remove('visible');
+  if (!isFullscreen) return;
+
+  // 閉じるアニメーション
+  overlay.classList.remove('open', 'opening');
+  overlay.classList.add('closing');
+  overlay.addEventListener('animationend', () => {
+    overlay.classList.remove('closing');
+  }, { once: true });
+
   isFullscreen = false;
   isAfter      = false;
+
   // カード側も変化前に戻す
   const v    = VARIANTS[variantIdx];
   const card = cards[variantIdx];
