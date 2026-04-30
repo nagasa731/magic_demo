@@ -86,12 +86,19 @@ const VARIANTS = [
   },
 
   // 絵を増やすときはここに追加
-  // {
-  //   labelBefore: '変化前（D）',
-  //   labelAfter:  '変化後（D\'）',
-  //   bgBefore: '#1a1a1a',
-  //   bgAfter:  '#...',
-  //   svgBefore: `...`,
-  //   svgAfter:  `...`,
-  // },
+  {
+    // --- D: PNG画像 ---
+    labelBefore: '変化前（D）',
+    labelAfter:  '変化後（D\'）',
+    bgBefore: '#1a1a1a',
+    bgAfter:  '#0a0820',
+    svgBefore: `
+      <image href="images/MC1_logo.png" x="0" y="0" width="100" height="100"
+        preserveAspectRatio="xMidYMid meet"/>
+    `,
+    svgAfter: `
+      <image href="images/MC1_glow.png" x="0" y="0" width="100" height="100"
+        preserveAspectRatio="xMidYMid meet"/>
+    `,
+  },
 ];
