@@ -261,17 +261,45 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: none;               /* script.js で flex に切り替え */
+  /* 常にflexで配置し、clip-pathで表示/非表示を切り替える */
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
   padding: 40px 32px;
   background: linear-gradient(160deg, #FFF6C2 0%, #FFD6F5 50%, #C2EEFF 100%);
+  /* 初期状態：完全に閉じた円（画面外に点として存在） */
+  clip-path: circle(0% at 50% 50%);
+  pointer-events: none;        /* 閉じているときはタッチを通過させる */
+  /* --cx, --cy はJS側からカードの中心座標としてセットする */
 }
 
-#fullscreen-overlay.visible {
-  display: flex;
+/* 開くアニメーション */
+@keyframes overlay-open {
+  from { clip-path: circle(0%   at var(--cx) var(--cy)); }
+  to   { clip-path: circle(150% at var(--cx) var(--cy)); }
+}
+
+/* 閉じるアニメーション */
+@keyframes overlay-close {
+  from { clip-path: circle(150% at var(--cx) var(--cy)); }
+  to   { clip-path: circle(0%   at var(--cx) var(--cy)); }
+}
+
+#fullscreen-overlay.opening {
+  pointer-events: auto;
+  animation: overlay-open 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+#fullscreen-overlay.open {
+  pointer-events: auto;
+  clip-path: circle(150% at var(--cx) var(--cy));
+}
+
+#fullscreen-overlay.closing {
+  pointer-events: none;
+  animation: overlay-close 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 /* 全画面カード */
