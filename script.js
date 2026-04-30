@@ -115,21 +115,21 @@ function openFullscreen(idx) {
   const v    = VARIANTS[idx];
   const card = cards[idx];
 
-  // カードの中心座標を画面全体に対するパーセントで取得
   const rect = card.getBoundingClientRect();
   const cx   = ((rect.left + rect.width  / 2) / window.innerWidth  * 100).toFixed(1) + '%';
   const cy   = ((rect.top  + rect.height / 2) / window.innerHeight * 100).toFixed(1) + '%';
   overlay.style.setProperty('--cx', cx);
   overlay.style.setProperty('--cy', cy);
 
-  // 中身をセット
+  // オーバーレイ背景をカードの色に合わせる
+  overlay.style.background = v.bgBefore;
+
   fullscreenSvg.innerHTML         = v.svgBefore;
-  fullscreenCard.style.background = v.bgBefore;
+  fullscreenCard.style.background = 'transparent';
   fullscreenLabel.textContent     = v.labelBefore;
   fullscreenHint.textContent      = '⬆️ うえに ふりあげよう！';
   fullscreenCard.classList.remove('is-after');
 
-  // アニメーション開始
   overlay.classList.remove('open', 'closing');
   overlay.classList.add('opening');
   overlay.addEventListener('animationend', () => {
@@ -182,9 +182,12 @@ function switchToAfter() {
   setTimeout(() => {
     const v = VARIANTS[variantIdx];
 
+    // オーバーレイ背景を変化後の色に
+    overlay.style.background = v.bgAfter;
+
     // 全画面カードを変化後に
     fullscreenSvg.innerHTML         = v.svgAfter;
-    fullscreenCard.style.background = v.bgAfter;
+    fullscreenCard.style.background = 'transparent';
     fullscreenLabel.textContent     = v.labelAfter;
     fullscreenCard.classList.add('is-after');
     fullscreenHint.textContent      = '✨ もうすぐ もとにもどるよ';
