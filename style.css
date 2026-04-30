@@ -261,18 +261,17 @@ html, body {
   position: fixed;
   inset: 0;
   z-index: 50;
-  /* 常にflexで配置し、clip-pathで表示/非表示を切り替える */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
   padding: 40px 32px;
-  background: linear-gradient(160deg, #FFF6C2 0%, #FFD6F5 50%, #C2EEFF 100%);
-  /* 初期状態：完全に閉じた円（画面外に点として存在） */
+  /* 背景色はJS側でカードのbgBefore/bgAfterに合わせてセットする */
+  background: #1a1a1a;
   clip-path: circle(0% at 50% 50%);
-  pointer-events: none;        /* 閉じているときはタッチを通過させる */
-  /* --cx, --cy はJS側からカードの中心座標としてセットする */
+  pointer-events: none;
+  transition: background 0.3s;
 }
 
 /* 開くアニメーション */
@@ -302,16 +301,15 @@ html, body {
   animation: overlay-close 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* 全画面カード */
+/* 全画面カード：枠・背景なし、絵だけ大きく表示 */
 #fullscreen-card {
-  width: min(80vw, 340px);
-  height: calc(min(80vw, 340px) * 1.35);
-  border-radius: var(--radius);
+  width: min(80vw, 360px);
+  height: calc(min(80vw, 360px) * 1.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.22);
-  transition: background 0.3s;
+  background: transparent !important;
+  box-shadow: none;
 }
 
 #fullscreen-card svg {
@@ -326,13 +324,13 @@ html, body {
 #fullscreen-label {
   font-family: 'Fredoka One', sans-serif;
   font-size: clamp(18px, 5vw, 24px);
-  color: var(--purple);
+  color: rgba(255,255,255,0.7);
 }
 
 #fullscreen-hint {
   font-family: 'Fredoka One', sans-serif;
   font-size: clamp(15px, 4vw, 19px);
-  color: #7A55C0;
+  color: rgba(255,255,255,0.55);
   text-align: center;
 }
 
